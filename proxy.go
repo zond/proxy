@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -104,6 +105,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	port := flag.Int("port", 80, "What port the proxy listens to")
 	host := flag.String("host", "0.0.0.0", "What host the proxy listens to")
 	flag.Usage = func() {
