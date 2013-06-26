@@ -20,11 +20,10 @@ type redirect struct {
 
 var redirects = make(map[string]redirect)
 
-func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL, err error) {
+func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL) {
 	redirect, found := redirects[urlIn.Host]
 	if !found {
-		err = fmt.Errorf("Proxy does not know where to forward requests for %v", urlIn.Host)
-		return
+		panic(fmt.Errorf("Proxy does not know where to forward requests for %v", urlIn))
 	}
 	redirectUrl := redirect.target
 	buf := bytes.NewBufferString(redirectUrl.Scheme)
@@ -43,17 +42,16 @@ func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL, err error) {
 	if urlIn.Fragment != "" {
 		fmt.Fprintf(buf, "#%v", urlIn.Fragment)
 	}
-	urlOut, err = url.Parse(string(buf.Bytes()))
+	var err error
+	if urlOut, err = url.Parse(string(buf.Bytes())); err != nil {
+		panic(err)
+	}
 	return
 }
 
 func handleWebsocket(cIn *websocket.Conn) {
 	configIn := cIn.Config()
-	urlOut, err := createRedirectedUrl(configIn.Location)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	urlOut := createRedirectedUrl(configIn.Location)
 	configOut := &websocket.Config{
 		Location:  urlOut,
 		Origin:    configIn.Origin,
@@ -92,14 +90,15 @@ func handleWebsocket(cIn *websocket.Conn) {
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
+	redirect, found := redirects[r.Host]
+	if !found {
+		w.WriteHeader(404)
+		fmt.Fprintln(w, "Proxy does not know where to forward requests for %v", r.Host)
+		return
+	}
 	if strings.ToLower(r.Header.Get("Connection")) == "upgrade" && strings.ToLower(r.Header.Get("Upgrade")) == "websocket" {
 		websocket.Handler(handleWebsocket).ServeHTTP(w, r)
 	} else {
-		redirect, found := redirects[r.URL.Host]
-		if !found {
-			log.Println("Proxy does not know where to forward requests for %v", r.URL.Host)
-			return
-		}
 		redirect.proxy.ServeHTTP(w, r)
 	}
 }
@@ -115,9 +114,13 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	for i := 1; i < len(args); i++ {
+	for i := 0; i < len(args); i++ {
 		hostname := args[i]
 		i++
+		if i == len(args) {
+			flag.Usage()
+			return
+		}
 		target, err := url.Parse(args[i])
 		if err != nil {
 			panic(err)
