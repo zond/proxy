@@ -94,7 +94,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	redirect, found := redirects[r.Host]
 	if !found {
 		w.WriteHeader(404)
-		fmt.Fprintln(w, "Proxy does not know where to forward requests for %v", r.Host)
+		fmt.Fprintf(w, "Proxy does not know where to forward requests for %v\n", r.Host)
 		return
 	}
 	if strings.ToLower(r.Header.Get("Connection")) == "upgrade" && strings.ToLower(r.Header.Get("Upgrade")) == "websocket" {
