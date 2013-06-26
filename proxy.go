@@ -27,16 +27,16 @@ func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL) {
 		panic(fmt.Errorf("Proxy does not know where to forward requests for %v", urlIn))
 	}
 	redirectUrl := redirect.target
-	buf := bytes.NewBufferString(redirectUrl.Scheme)
-	fmt.Fprint(buf, "://")
+	buf := bytes.NewBufferString(urlIn.Scheme)
+	fmt.Fprintf(buf, "://")
 	if urlIn.User != nil {
-		fmt.Fprintf(buf, "%v@", redirectUrl.User.String())
+		fmt.Fprintf(buf, "%v@", urlIn.User.String())
 	}
-	fmt.Fprintf(buf, "://%v", redirectUrl.Host)
+	fmt.Fprintf(buf, "%v", redirectUrl.Host)
 	if redirectUrl.Path != "" {
-		fmt.Fprintf(buf, "/%v", redirectUrl.Path)
+		fmt.Fprintf(buf, "%v", redirectUrl.Path)
 	}
-	fmt.Fprintf(buf, "/%v", urlIn.Path)
+	fmt.Fprintf(buf, "%v", urlIn.Path)
 	if urlIn.RawQuery != "" {
 		fmt.Fprintf(buf, "?%v", urlIn.RawQuery)
 	}
@@ -53,18 +53,15 @@ func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL) {
 func handleWebsocket(cIn *websocket.Conn) {
 	configIn := cIn.Config()
 	urlOut := createRedirectedUrl(configIn.Location)
-	configOut := &websocket.Config{
-		Location:  urlOut,
-		Origin:    configIn.Origin,
-		Protocol:  configIn.Protocol,
-		Version:   configIn.Version,
-		TlsConfig: configIn.TlsConfig,
-		Header:    configIn.Header,
+	configOut := *configIn
+	configOut.Location = urlOut
+	if configOut.Header == nil {
+		configOut.Header = make(http.Header)
 	}
 	bits := strings.Split(configIn.Header.Get("X-Forwarded-For"), ",")
 	bits = append(bits, cIn.RemoteAddr().String())
 	configOut.Header.Set("X-Forwarded-For", strings.Join(bits, ","))
-	cOut, err := websocket.DialConfig(configOut)
+	cOut, err := websocket.DialConfig(&configOut)
 	if err != nil {
 		log.Println(err)
 		return
