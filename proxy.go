@@ -74,15 +74,15 @@ func handleWebsocket(cIn *websocket.Conn) {
 			cIn.Close()
 			cOut.Close()
 		}()
-		var b []byte
-		for err := websocket.Message.Receive(cIn, &b); err == nil; err = websocket.Message.Receive(cIn, &b) {
-			err = websocket.Message.Send(cOut, b)
+		var s string
+		for err := websocket.Message.Receive(cIn, &s); err == nil; err = websocket.Message.Receive(cIn, &s) {
+			err = websocket.Message.Send(cOut, s)
 		}
 		log.Println(err)
 	}()
-	var b []byte
-	for err = websocket.Message.Receive(cOut, &b); err == nil; err = websocket.Message.Receive(cOut, &b) {
-		err = websocket.Message.Send(cIn, b)
+	var s string
+	for err = websocket.Message.Receive(cOut, &s); err == nil; err = websocket.Message.Receive(cOut, &s) {
+		err = websocket.Message.Send(cIn, s)
 	}
 	log.Println(err)
 }
