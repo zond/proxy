@@ -37,11 +37,11 @@ func createRedirectedUrl(urlIn *url.URL) (urlOut *url.URL) {
 		fmt.Fprintf(buf, "%v", redirectUrl.Path)
 	}
 	fmt.Fprintf(buf, "%v", urlIn.Path)
-	if urlIn.RawQuery != "" {
-		fmt.Fprintf(buf, "?%v", urlIn.RawQuery)
-	}
 	if urlIn.Fragment != "" {
 		fmt.Fprintf(buf, "#%v", urlIn.Fragment)
+	}
+	if urlIn.RawQuery != "" {
+		fmt.Fprintf(buf, "?%v", urlIn.RawQuery)
 	}
 	var err error
 	if urlOut, err = url.Parse(string(buf.Bytes())); err != nil {
