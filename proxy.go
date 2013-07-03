@@ -77,14 +77,12 @@ func handleWebsocket(cIn *websocket.Conn) {
 		var s string
 		for err := websocket.Message.Receive(cIn, &s); err == nil; err = websocket.Message.Receive(cIn, &s) {
 			err = websocket.Message.Send(cOut, s)
-			s = ""
 		}
 		log.Println(err)
 	}()
 	var s string
 	for err = websocket.Message.Receive(cOut, &s); err == nil; err = websocket.Message.Receive(cOut, &s) {
 		err = websocket.Message.Send(cIn, s)
-		s = ""
 	}
 	log.Println(err)
 }
